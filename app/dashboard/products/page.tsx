@@ -39,11 +39,13 @@ interface Product {
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const [formData, setFormData] = useState({
     name: '',
@@ -57,6 +59,17 @@ export default function ProductsPage() {
     fetchProducts();
   }, []);
 
+  useEffect(() => {
+    if (searchQuery.trim() === '') {
+      setFilteredProducts(products);
+    } else {
+      const filtered = products.filter((product) =>
+        product.name.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      setFilteredProducts(filtered);
+    }
+  }, [searchQuery, products]);
+
   const fetchProducts = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -69,6 +82,7 @@ export default function ProductsPage() {
       if (response.ok) {
         const data = await response.json();
         setProducts(data.products);
+        setFilteredProducts(data.products);
       }
     } catch (error) {
       toast.error('Failed to fetch products');
@@ -308,7 +322,15 @@ export default function ProductsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Product List</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>Product List</CardTitle>
+            <Input
+              placeholder="Search products by name..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="max-w-xs"
+            />
+          </div>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -317,9 +339,9 @@ export default function ProductsPage() {
                 <Skeleton key={i} className="h-16 w-full" />
               ))}
             </div>
-          ) : products.length === 0 ? (
+          ) : filteredProducts.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              No products found. Add your first product to get started.
+              {searchQuery ? 'No products found matching your search.' : 'No products found. Add your first product to get started.'}
             </div>
           ) : (
             <Table>
@@ -334,7 +356,7 @@ export default function ProductsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {products.map((product) => (
+                {filteredProducts.map((product) => (
                   <TableRow key={product._id}>
                     <TableCell>
                       <Avatar>
