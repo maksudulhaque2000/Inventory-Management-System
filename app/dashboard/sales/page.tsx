@@ -30,11 +30,9 @@ import {
 } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Download, DollarSign } from 'lucide-react';
+import { Plus, Download, DollarSign, UserPlus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 interface Sale {
   _id: string;
@@ -79,10 +77,10 @@ export default function SalesPage() {
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
+  const [isCreateCustomerDialogOpen, setIsCreateCustomerDialogOpen] = useState(false);
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [graphData, setGraphData] = useState<any>(null);
 
   const [formData, setFormData] = useState({
     productId: '',
@@ -93,6 +91,13 @@ export default function SalesPage() {
     cashReceived: 0,
   });
 
+  const [newCustomerData, setNewCustomerData] = useState({
+    name: '',
+    mobileNumber: '',
+    address: '',
+    imageUrl: '',
+  });
+
   const [paymentData, setPaymentData] = useState({
     additionalPayment: 0,
   });
@@ -101,7 +106,6 @@ export default function SalesPage() {
     fetchSales();
     fetchProducts();
     fetchCustomers();
-    fetchGraphData();
   }, [page]);
 
   const fetchSales = async () => {
@@ -162,24 +166,6 @@ export default function SalesPage() {
     }
   };
 
-  const fetchGraphData = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/dashboard/sales-graph', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setGraphData(data);
-      }
-    } catch (error) {
-      console.error('Failed to fetch graph data:', error);
-    }
-  };
-
   const handleCustomerSearch = (search: string) => {
     setFormData({ ...formData, customerSearch: search });
     if (search) {
@@ -191,6 +177,46 @@ export default function SalesPage() {
       setFilteredCustomers(filtered);
     } else {
       setFilteredCustomers(customers);
+    }
+  };
+
+  const handleCreateCustomer = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!newCustomerData.name || !newCustomerData.mobileNumber || !newCustomerData.address) {
+      toast.error('Please fill all required fields');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/customers', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(newCustomerData),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success('Customer created successfully');
+        setNewCustomerData({ name: '', mobileNumber: '', address: '', imageUrl: '' });
+        setIsCreateCustomerDialogOpen(false);
+        await fetchCustomers();
+        // Auto-select the newly created customer
+        setFormData({
+          ...formData,
+          customerId: data.customer._id,
+          customerSearch: data.customer.name,
+        });
+      } else {
+        toast.error(data.error || 'Failed to create customer');
+      }
+    } catch (error) {
+      toast.error('Failed to create customer');
     }
   };
 
@@ -207,6 +233,11 @@ export default function SalesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!formData.customerId) {
+      toast.error('Please select or create a customer');
+      return;
+    }
 
     const product = products.find((p) => p._id === formData.productId);
     if (!product) {
@@ -244,7 +275,6 @@ export default function SalesPage() {
         resetForm();
         fetchSales();
         fetchProducts();
-        fetchGraphData();
       } else {
         toast.error(data.error || 'Failed to create sale');
       }
@@ -289,64 +319,46 @@ export default function SalesPage() {
 
   const downloadInvoice = async (sale: Sale) => {
     try {
-      const invoiceContent = document.createElement('div');
-      invoiceContent.style.padding = '20px';
-      invoiceContent.style.backgroundColor = 'white';
-      invoiceContent.innerHTML = `
-        <div style="text-align: center; margin-bottom: 30px;">
-          <h1 style="font-size: 24px; margin: 0;">Invoice</h1>
-        </div>
-        <div style="margin-bottom: 20px;">
-          <p><strong>Date:</strong> ${new Date(sale.saleDate).toLocaleDateString()}</p>
-          <p><strong>Invoice #:</strong> ${sale._id}</p>
-        </div>
-        <div style="margin-bottom: 20px;">
-          <h3>Customer Details:</h3>
-          <p><strong>Name:</strong> ${sale.customer.name}</p>
-          <p><strong>Mobile:</strong> ${sale.customer.mobileNumber}</p>
-          <p><strong>Address:</strong> ${sale.customer.address}</p>
-        </div>
-        <div style="margin-bottom: 20px;">
-          <h3>Product Details:</h3>
-          <p><strong>Product:</strong> ${sale.product.name}</p>
-          <p><strong>Quantity:</strong> ${sale.quantity}</p>
-          <p><strong>Unit Price:</strong> ${formatCurrency(sale.unitPrice)}</p>
-          <p><strong>Total Amount:</strong> ${formatCurrency(sale.totalAmount)}</p>
-        </div>
-        <div style="margin-bottom: 20px;">
-          <h3>Payment Details:</h3>
-          <p><strong>Cash Received:</strong> ${formatCurrency(sale.cashReceived)}</p>
-          <p><strong>Remaining:</strong> ${formatCurrency(sale.remainingAmount)}</p>
-          <p><strong>Status:</strong> ${sale.paymentStatus}</p>
-        </div>
-      `;
-
-      document.body.appendChild(invoiceContent);
-
-      const canvas = await html2canvas(invoiceContent);
-      const imgData = canvas.toDataURL('image/png');
-
       const pdf = new jsPDF();
-      const imgWidth = 190;
-      const pageHeight = 295;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      let heightLeft = imgHeight;
-
-      let position = 0;
-
-      pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-
-      while (heightLeft >= 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-      }
-
-      pdf.save(`invoice-${sale._id}.pdf`);
-      document.body.removeChild(invoiceContent);
+      
+      // Set font
+      pdf.setFontSize(20);
+      pdf.text('INVOICE', 105, 20, { align: 'center' });
+      
+      // Invoice details
+      pdf.setFontSize(10);
+      pdf.text(`Date: ${new Date(sale.saleDate).toLocaleDateString()}`, 14, 35);
+      pdf.text(`Invoice #: ${sale._id.substring(0, 8)}`, 14, 42);
+      
+      // Customer details
+      pdf.setFontSize(12);
+      pdf.text('Customer Details:', 14, 55);
+      pdf.setFontSize(10);
+      pdf.text(`Name: ${sale.customer.name}`, 14, 62);
+      pdf.text(`Mobile: ${sale.customer.mobileNumber}`, 14, 69);
+      pdf.text(`Address: ${sale.customer.address}`, 14, 76);
+      
+      // Product details
+      pdf.setFontSize(12);
+      pdf.text('Product Details:', 14, 90);
+      pdf.setFontSize(10);
+      pdf.text(`Product: ${sale.product.name}`, 14, 97);
+      pdf.text(`Quantity: ${sale.quantity}`, 14, 104);
+      pdf.text(`Unit Price: ${formatCurrency(sale.unitPrice)}`, 14, 111);
+      pdf.text(`Total Amount: ${formatCurrency(sale.totalAmount)}`, 14, 118);
+      
+      // Payment details
+      pdf.setFontSize(12);
+      pdf.text('Payment Details:', 14, 135);
+      pdf.setFontSize(10);
+      pdf.text(`Cash Received: ${formatCurrency(sale.cashReceived)}`, 14, 142);
+      pdf.text(`Remaining: ${formatCurrency(sale.remainingAmount)}`, 14, 149);
+      pdf.text(`Status: ${sale.paymentStatus.toUpperCase()}`, 14, 156);
+      
+      pdf.save(`invoice-${sale._id.substring(0, 8)}.pdf`);
+      toast.success('Invoice downloaded successfully');
     } catch (error) {
+      console.error('Invoice generation error:', error);
       toast.error('Failed to generate invoice');
     }
   };
@@ -411,7 +423,18 @@ export default function SalesPage() {
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="customerSearch">Search Customer</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="customerSearch">Search Customer</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsCreateCustomerDialogOpen(true)}
+                  >
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Add New Customer
+                  </Button>
+                </div>
                 <Input
                   id="customerSearch"
                   placeholder="Type customer name or mobile number..."
@@ -436,6 +459,11 @@ export default function SalesPage() {
                         {customer.name} - {customer.mobileNumber}
                       </div>
                     ))}
+                  </div>
+                )}
+                {formData.customerSearch && filteredCustomers.length === 0 && (
+                  <div className="text-sm text-muted-foreground p-2">
+                    No customer found. Click &quot;Add New Customer&quot; to create one.
                   </div>
                 )}
               </div>
@@ -542,62 +570,6 @@ export default function SalesPage() {
         </Dialog>
       </div>
 
-      {graphData && (
-        <div className="grid gap-4 md:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Daily Sales (Last 30 Days)</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={graphData.daily}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Line type="monotone" dataKey="amount" stroke="#8884d8" />
-                </LineChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Monthly Sales (This Year)</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={graphData.monthly}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="amount" fill="#8884d8" />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-          <Card className="md:col-span-2">
-            <CardHeader>
-              <CardTitle>Yearly Sales (Last 5 Years)</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={graphData.yearly}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="year" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="amount" fill="#82ca9d" />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
       <Card>
         <CardHeader>
           <CardTitle>Sales List</CardTitle>
@@ -695,6 +667,75 @@ export default function SalesPage() {
         </CardContent>
       </Card>
 
+      <Dialog open={isCreateCustomerDialogOpen} onOpenChange={setIsCreateCustomerDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New Customer</DialogTitle>
+            <DialogDescription>
+              Create a new customer to proceed with the sale
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleCreateCustomer} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="newCustomerName">Customer Name *</Label>
+              <Input
+                id="newCustomerName"
+                value={newCustomerData.name}
+                onChange={(e) =>
+                  setNewCustomerData({ ...newCustomerData, name: e.target.value })
+                }
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="newCustomerMobile">Mobile Number *</Label>
+              <Input
+                id="newCustomerMobile"
+                value={newCustomerData.mobileNumber}
+                onChange={(e) =>
+                  setNewCustomerData({ ...newCustomerData, mobileNumber: e.target.value })
+                }
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="newCustomerAddress">Address *</Label>
+              <Input
+                id="newCustomerAddress"
+                value={newCustomerData.address}
+                onChange={(e) =>
+                  setNewCustomerData({ ...newCustomerData, address: e.target.value })
+                }
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="newCustomerImageUrl">Image URL (Optional)</Label>
+              <Input
+                id="newCustomerImageUrl"
+                value={newCustomerData.imageUrl}
+                onChange={(e) =>
+                  setNewCustomerData({ ...newCustomerData, imageUrl: e.target.value })
+                }
+              />
+            </div>
+            <div className="flex justify-end space-x-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setIsCreateCustomerDialogOpen(false);
+                  setNewCustomerData({ name: '', mobileNumber: '', address: '', imageUrl: '' });
+                }}
+              >
+                Cancel
+              </Button>
+              <Button type="submit">Create Customer</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={isPaymentDialogOpen} onOpenChange={setIsPaymentDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -759,4 +800,3 @@ export default function SalesPage() {
     </div>
   );
 }
-
