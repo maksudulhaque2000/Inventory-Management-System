@@ -4,6 +4,8 @@ export interface IUser extends mongoose.Document {
   name: string;
   email: string;
   password: string;
+  companyName?: string;
+  profileImage?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -23,6 +25,14 @@ const UserSchema = new Schema<IUser>(
     password: {
       type: String,
       required: [true, 'Password is required'],
+    },
+    companyName: {
+      type: String,
+      default: '',
+    },
+    profileImage: {
+      type: String,
+      default: '',
     },
   },
   {

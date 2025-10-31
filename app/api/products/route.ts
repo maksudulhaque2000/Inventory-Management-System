@@ -4,9 +4,35 @@ import Product from '@/models/Product';
 
 export async function GET(request: NextRequest) {
   try {
+    const searchParams = request.nextUrl.searchParams;
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '10');
+    const search = searchParams.get('search') || '';
+
     await connectDB();
-    const products = await Product.find().sort({ createdAt: -1 });
-    return NextResponse.json({ products });
+
+    const query = search
+      ? {
+          name: { $regex: search, $options: 'i' },
+        }
+      : {};
+
+    const products = await Product.find(query)
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit);
+
+    const total = await Product.countDocuments(query);
+
+    return NextResponse.json({
+      products,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit),
+      },
+    });
   } catch (error: any) {
     return NextResponse.json(
       { error: error.message || 'Failed to fetch products' },
@@ -54,4 +80,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
