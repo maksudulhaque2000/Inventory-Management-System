@@ -4,7 +4,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { ThemeToggle } from './ThemeToggle';
 import { Button } from '@/components/ui/button';
-import { Package, ShoppingCart, Users, LayoutDashboard, LogOut } from 'lucide-react';
+import { Package, ShoppingCart, Users, LayoutDashboard, LogOut, User } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect } from 'react';
 
@@ -36,6 +36,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     { href: '/dashboard/products', label: 'Products', icon: Package },
     { href: '/dashboard/sales', label: 'Sales', icon: ShoppingCart },
     { href: '/dashboard/customers', label: 'Customers', icon: Users },
+    { href: '/dashboard/profile', label: 'Profile', icon: User },
   ];
 
   return (

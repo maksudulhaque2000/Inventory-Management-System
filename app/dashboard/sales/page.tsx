@@ -69,11 +69,17 @@ interface Customer {
   mobileNumber: string;
 }
 
+interface UserProfile {
+  companyName?: string;
+  name?: string;
+}
+
 export default function SalesPage() {
   const [sales, setSales] = useState<Sale[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([]);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
@@ -106,7 +112,26 @@ export default function SalesPage() {
     fetchSales();
     fetchProducts();
     fetchCustomers();
+    fetchUserProfile();
   }, [page]);
+
+  const fetchUserProfile = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/user/profile', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setUserProfile(data.user);
+      }
+    } catch (error) {
+      console.error('Failed to fetch user profile:', error);
+    }
+  };
 
   const fetchSales = async () => {
     try {
@@ -319,41 +344,47 @@ export default function SalesPage() {
 
   const downloadInvoice = async (sale: Sale) => {
     try {
+      const companyName = userProfile?.companyName || userProfile?.name || 'Company Name';
+      
       const pdf = new jsPDF();
       
       // Set font
       pdf.setFontSize(20);
       pdf.text('INVOICE', 105, 20, { align: 'center' });
       
+      // Company name
+      pdf.setFontSize(14);
+      pdf.text(companyName, 105, 30, { align: 'center' });
+      
       // Invoice details
       pdf.setFontSize(10);
-      pdf.text(`Date: ${new Date(sale.saleDate).toLocaleDateString()}`, 14, 35);
-      pdf.text(`Invoice #: ${sale._id.substring(0, 8)}`, 14, 42);
+      pdf.text(`Date: ${new Date(sale.saleDate).toLocaleDateString()}`, 14, 45);
+      pdf.text(`Invoice #: ${sale._id.substring(0, 8)}`, 14, 52);
       
       // Customer details
       pdf.setFontSize(12);
-      pdf.text('Customer Details:', 14, 55);
+      pdf.text('Customer Details:', 14, 65);
       pdf.setFontSize(10);
-      pdf.text(`Name: ${sale.customer.name}`, 14, 62);
-      pdf.text(`Mobile: ${sale.customer.mobileNumber}`, 14, 69);
-      pdf.text(`Address: ${sale.customer.address}`, 14, 76);
+      pdf.text(`Name: ${sale.customer.name}`, 14, 72);
+      pdf.text(`Mobile: ${sale.customer.mobileNumber}`, 14, 79);
+      pdf.text(`Address: ${sale.customer.address}`, 14, 86);
       
       // Product details
       pdf.setFontSize(12);
-      pdf.text('Product Details:', 14, 90);
+      pdf.text('Product Details:', 14, 100);
       pdf.setFontSize(10);
-      pdf.text(`Product: ${sale.product.name}`, 14, 97);
-      pdf.text(`Quantity: ${sale.quantity}`, 14, 104);
-      pdf.text(`Unit Price: ${formatCurrency(sale.unitPrice)}`, 14, 111);
-      pdf.text(`Total Amount: ${formatCurrency(sale.totalAmount)}`, 14, 118);
+      pdf.text(`Product: ${sale.product.name}`, 14, 107);
+      pdf.text(`Quantity: ${sale.quantity}`, 14, 114);
+      pdf.text(`Unit Price: ${formatCurrency(sale.unitPrice)}`, 14, 121);
+      pdf.text(`Total Amount: ${formatCurrency(sale.totalAmount)}`, 14, 128);
       
       // Payment details
       pdf.setFontSize(12);
-      pdf.text('Payment Details:', 14, 135);
+      pdf.text('Payment Details:', 14, 145);
       pdf.setFontSize(10);
-      pdf.text(`Cash Received: ${formatCurrency(sale.cashReceived)}`, 14, 142);
-      pdf.text(`Remaining: ${formatCurrency(sale.remainingAmount)}`, 14, 149);
-      pdf.text(`Status: ${sale.paymentStatus.toUpperCase()}`, 14, 156);
+      pdf.text(`Cash Received: ${formatCurrency(sale.cashReceived)}`, 14, 152);
+      pdf.text(`Remaining: ${formatCurrency(sale.remainingAmount)}`, 14, 159);
+      pdf.text(`Status: ${sale.paymentStatus.toUpperCase()}`, 14, 166);
       
       pdf.save(`invoice-${sale._id.substring(0, 8)}.pdf`);
       toast.success('Invoice downloaded successfully');
@@ -578,7 +609,11 @@ export default function SalesPage() {
           {loading ? (
             <div className="space-y-4">
               {[...Array(5)].map((_, i) => (
-                <Skeleton key={i} className="h-16 w-full" />
+                <div key={i} className="flex space-x-4">
+                  <Skeleton className="h-12 flex-1" />
+                  <Skeleton className="h-12 w-24" />
+                  <Skeleton className="h-12 w-24" />
+                </div>
               ))}
             </div>
           ) : sales.length === 0 ? (
