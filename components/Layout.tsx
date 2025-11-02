@@ -4,20 +4,55 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { ThemeToggle } from './ThemeToggle';
 import { Button } from '@/components/ui/button';
-import { Package, ShoppingCart, Users, LayoutDashboard, LogOut, User } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { Package, ShoppingCart, Users, LayoutDashboard, LogOut } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { user, loading, logout } = useAuth();
+  const [userProfile, setUserProfile] = useState<any>(null);
 
   useEffect(() => {
     if (!loading && !user) {
       router.push('/');
     }
   }, [user, loading, router]);
+
+  const fetchUserProfile = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      
+      const response = await fetch('/api/user/profile', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setUserProfile(data.user);
+      }
+    } catch (error) {
+      console.error('Failed to fetch user profile:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      fetchUserProfile();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   if (loading) {
     return (
@@ -36,7 +71,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     { href: '/dashboard/products', label: 'Products', icon: Package },
     { href: '/dashboard/sales', label: 'Sales', icon: ShoppingCart },
     { href: '/dashboard/customers', label: 'Customers', icon: Users },
-    { href: '/dashboard/profile', label: 'Profile', icon: User },
   ];
 
   return (
@@ -70,7 +104,27 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </div>
             </div>
             <div className="flex items-center space-x-4">
-              <span className="text-sm text-muted-foreground">{user.name}</span>
+              <span className="text-sm text-muted-foreground hidden md:block">{user.name}</span>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Link href="/dashboard/profile">
+                      <Avatar className="h-10 w-10 cursor-pointer hover:opacity-80 transition-opacity">
+                        <AvatarImage
+                          src={userProfile?.profileImage || undefined}
+                          alt={user.name}
+                        />
+                        <AvatarFallback className="bg-primary text-primary-foreground">
+                          {user.name.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Profile</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
               <ThemeToggle />
               <Button variant="outline" size="sm" onClick={logout}>
                 <LogOut className="h-4 w-4 mr-2" />

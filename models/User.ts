@@ -3,9 +3,11 @@ import mongoose, { Schema, model, models } from 'mongoose';
 export interface IUser extends mongoose.Document {
   name: string;
   email: string;
-  password: string;
+  password?: string;
   companyName?: string;
   profileImage?: string;
+  provider?: 'local' | 'google' | 'facebook';
+  providerId?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -24,7 +26,17 @@ const UserSchema = new Schema<IUser>(
     },
     password: {
       type: String,
-      required: [true, 'Password is required'],
+      required: function() {
+        return this.provider === 'local' || !this.provider;
+      },
+    },
+    provider: {
+      type: String,
+      enum: ['local', 'google', 'facebook'],
+      default: 'local',
+    },
+    providerId: {
+      type: String,
     },
     companyName: {
       type: String,

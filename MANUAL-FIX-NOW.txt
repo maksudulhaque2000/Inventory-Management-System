@@ -1,0 +1,28 @@
+=================================================================
+🔥 IMMEDIATE FIX - Copy & Paste These Commands
+=================================================================
+
+আপনার terminal এ এই commands copy করুন এবং paste করুন:
+
+--- STEP 1: Kill All Processes ---
+pkill -9 node; pkill -9 -f "next"; sleep 2
+
+--- STEP 2: Clean Cache ---
+cd /home/maksudulhaque/DevZone/App && rm -rf .next node_modules/.cache
+
+--- STEP 3: Free Ports ---
+lsof -ti:3000 | xargs kill -9 2>/dev/null || echo "Port 3000 already free"
+
+--- STEP 4: Start Server ---
+cd /home/maksudulhaque/DevZone/App && npm run dev
+
+=================================================================
+OR Use This Single Command:
+=================================================================
+
+cd /home/maksudulhaque/DevZone/App && pkill -9 node; pkill -9 -f "next"; sleep 2; rm -rf .next node_modules/.cache .turbo; lsof -ti:3000 | xargs kill -9 2>/dev/null; npm run dev
+
+=================================================================
+এই command run করার পর server শুরু হবে port 3000 এ
+=================================================================
+

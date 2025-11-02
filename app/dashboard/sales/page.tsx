@@ -365,15 +365,15 @@ export default function SalesPage() {
       pdf.setFontSize(12);
       pdf.text('Customer Details:', 14, 65);
       pdf.setFontSize(10);
-      pdf.text(`Name: ${sale.customer.name}`, 14, 72);
-      pdf.text(`Mobile: ${sale.customer.mobileNumber}`, 14, 79);
-      pdf.text(`Address: ${sale.customer.address}`, 14, 86);
+      pdf.text(`Name: ${sale.customer?.name || 'Unknown Customer'}`, 14, 72);
+      pdf.text(`Mobile: ${sale.customer?.mobileNumber || 'N/A'}`, 14, 79);
+      pdf.text(`Address: ${sale.customer?.address || 'N/A'}`, 14, 86);
       
       // Product details
       pdf.setFontSize(12);
       pdf.text('Product Details:', 14, 100);
       pdf.setFontSize(10);
-      pdf.text(`Product: ${sale.product.name}`, 14, 107);
+      pdf.text(`Product: ${sale.product?.name || 'Deleted Product'}`, 14, 107);
       pdf.text(`Quantity: ${sale.quantity}`, 14, 114);
       pdf.text(`Unit Price: ${formatCurrency(sale.unitPrice)}`, 14, 121);
       pdf.text(`Total Amount: ${formatCurrency(sale.totalAmount)}`, 14, 128);
@@ -642,8 +642,8 @@ export default function SalesPage() {
                       <TableCell>
                         {new Date(sale.saleDate).toLocaleDateString()}
                       </TableCell>
-                      <TableCell>{sale.product.name}</TableCell>
-                      <TableCell>{sale.customer.name}</TableCell>
+                      <TableCell>{sale.product?.name || 'Deleted Product'}</TableCell>
+                      <TableCell>{sale.customer?.name || 'Unknown Customer'}</TableCell>
                       <TableCell>{sale.quantity}</TableCell>
                       <TableCell>{formatCurrency(sale.totalAmount)}</TableCell>
                       <TableCell>{formatCurrency(sale.cashReceived)}</TableCell>
@@ -776,7 +776,7 @@ export default function SalesPage() {
           <DialogHeader>
             <DialogTitle>Update Payment</DialogTitle>
             <DialogDescription>
-              Add payment for: {selectedSale?.customer.name}
+              Add payment for: {selectedSale?.customer?.name || 'Unknown Customer'}
             </DialogDescription>
           </DialogHeader>
           {selectedSale && (

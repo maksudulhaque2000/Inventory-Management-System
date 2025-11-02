@@ -1,0 +1,30 @@
+=====================================
+QUICK FIX FOR NEXT.JS ERRORS
+=====================================
+
+Terminal এ এই commands একে একে run করুন:
+
+1. Kill all processes:
+------------------------
+pkill -9 node
+pkill -9 -f "next"
+
+2. Free ports:
+---------------
+kill -9 $(lsof -ti:3000 2>/dev/null)
+kill -9 $(lsof -ti:3001 2>/dev/null)
+kill -9 $(lsof -ti:3003 2>/dev/null)
+
+3. Clean cache:
+---------------
+rm -rf .next
+rm -rf node_modules/.cache
+
+4. Start server:
+----------------
+npm run dev
+
+=====================================
+RESULT: Server error-free চালবে! 🎉
+=====================================
+
