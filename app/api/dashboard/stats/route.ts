@@ -50,9 +50,10 @@ export async function GET() {
       todaySalesAmount,
       totalOutstanding,
     });
-  } catch (error: any) {
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch dashboard stats';
     return NextResponse.json(
-      { error: error.message || 'Failed to fetch dashboard stats' },
+      { error: errorMessage },
       { status: 500 }
     );
   }

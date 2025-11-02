@@ -36,9 +36,10 @@ export async function GET(request: NextRequest) {
         pages: Math.ceil(total / limit),
       },
     });
-  } catch (error: any) {
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch customers';
     return NextResponse.json(
-      { error: error.message || 'Failed to fetch customers' },
+      { error: errorMessage },
       { status: 500 }
     );
   }
@@ -65,9 +66,10 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json({ customer }, { status: 201 });
-  } catch (error: any) {
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Failed to create customer';
     return NextResponse.json(
-      { error: error.message || 'Failed to create customer' },
+      { error: errorMessage },
       { status: 500 }
     );
   }

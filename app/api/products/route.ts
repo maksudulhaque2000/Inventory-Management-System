@@ -33,9 +33,10 @@ export async function GET(request: NextRequest) {
         pages: Math.ceil(total / limit),
       },
     });
-  } catch (error: any) {
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch products';
     return NextResponse.json(
-      { error: error.message || 'Failed to fetch products' },
+      { error: errorMessage },
       { status: 500 }
     );
   }
@@ -73,9 +74,10 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json({ product }, { status: 201 });
-  } catch (error: any) {
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Failed to create product';
     return NextResponse.json(
-      { error: error.message || 'Failed to create product' },
+      { error: errorMessage },
       { status: 500 }
     );
   }

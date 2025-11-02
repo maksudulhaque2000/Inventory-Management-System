@@ -29,9 +29,10 @@ export async function GET(request: NextRequest) {
         pages: Math.ceil(total / limit),
       },
     });
-  } catch (error: any) {
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch sales';
     return NextResponse.json(
-      { error: error.message || 'Failed to fetch sales' },
+      { error: errorMessage },
       { status: 500 }
     );
   }
@@ -98,9 +99,10 @@ export async function POST(request: NextRequest) {
       .populate('customer', 'name mobileNumber address');
 
     return NextResponse.json({ sale: populatedSale }, { status: 201 });
-  } catch (error: any) {
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Failed to create sale';
     return NextResponse.json(
-      { error: error.message || 'Failed to create sale' },
+      { error: errorMessage },
       { status: 500 }
     );
   }

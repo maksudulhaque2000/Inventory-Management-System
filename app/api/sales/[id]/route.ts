@@ -48,9 +48,10 @@ export async function PUT(
       .populate('customer', 'name mobileNumber address');
 
     return NextResponse.json({ sale: populatedSale });
-  } catch (error: any) {
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Failed to update sale';
     return NextResponse.json(
-      { error: error.message || 'Failed to update sale' },
+      { error: errorMessage },
       { status: 500 }
     );
   }

@@ -26,9 +26,10 @@ export async function GET(
       totalPurchaseAmount,
       totalOutstanding,
     });
-  } catch (error: any) {
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch customer stats';
     return NextResponse.json(
-      { error: error.message || 'Failed to fetch customer stats' },
+      { error: errorMessage },
       { status: 500 }
     );
   }

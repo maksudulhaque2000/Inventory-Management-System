@@ -39,9 +39,10 @@ export async function GET(request: NextRequest) {
         email: user.email,
       },
     });
-  } catch (error: any) {
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Authentication failed';
     return NextResponse.json(
-      { error: error.message || 'Authentication failed' },
+      { error: errorMessage },
       { status: 500 }
     );
   }

@@ -4,7 +4,7 @@ import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
 import { generateToken } from '@/lib/auth';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const session = await auth();
 
@@ -37,9 +37,10 @@ export async function GET(request: NextRequest) {
         profileImage: user.profileImage,
       },
     });
-  } catch (error: any) {
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Failed to authenticate';
     return NextResponse.json(
-      { error: error.message || 'Failed to authenticate' },
+      { error: errorMessage },
       { status: 500 }
     );
   }

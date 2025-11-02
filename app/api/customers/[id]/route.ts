@@ -19,9 +19,10 @@ export async function GET(
     }
 
     return NextResponse.json({ customer });
-  } catch (error: any) {
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch customer';
     return NextResponse.json(
-      { error: error.message || 'Failed to fetch customer' },
+      { error: errorMessage },
       { status: 500 }
     );
   }
@@ -55,9 +56,10 @@ export async function PUT(
     }
 
     return NextResponse.json({ customer });
-  } catch (error: any) {
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Failed to update customer';
     return NextResponse.json(
-      { error: error.message || 'Failed to update customer' },
+      { error: errorMessage },
       { status: 500 }
     );
   }
@@ -80,9 +82,10 @@ export async function DELETE(
     }
 
     return NextResponse.json({ message: 'Customer deleted successfully' });
-  } catch (error: any) {
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Failed to delete customer';
     return NextResponse.json(
-      { error: error.message || 'Failed to delete customer' },
+      { error: errorMessage },
       { status: 500 }
     );
   }

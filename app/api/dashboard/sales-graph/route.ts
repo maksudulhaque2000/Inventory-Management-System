@@ -69,9 +69,10 @@ export async function GET() {
       monthly: monthlySales,
       yearly: yearlySales,
     });
-  } catch (error: any) {
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch sales graph data';
     return NextResponse.json(
-      { error: error.message || 'Failed to fetch sales graph data' },
+      { error: errorMessage },
       { status: 500 }
     );
   }
