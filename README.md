@@ -67,9 +67,17 @@ npm run dev
 3. Add environment variables in Vercel dashboard:
    - `MONGODB_URI`: Your MongoDB connection string
    - `NEXTAUTH_SECRET`: A random secret string
-   - `NEXTAUTH_URL`: Your Vercel deployment URL
+   - `NEXTAUTH_URL`: Your Vercel deployment URL (e.g., `https://your-app.vercel.app`)
+   - `GOOGLE_CLIENT_ID`: Your Google OAuth Client ID (optional)
+   - `GOOGLE_CLIENT_SECRET`: Your Google OAuth Client Secret (optional)
+   - `FACEBOOK_CLIENT_ID`: Your Facebook App ID (optional)
+   - `FACEBOOK_CLIENT_SECRET`: Your Facebook App Secret (optional)
 
-4. Deploy!
+4. Configure OAuth providers:
+   - **Google OAuth**: Add redirect URIs in Google Cloud Console (see Google Cloud Console settings)
+   - **Facebook OAuth**: Configure Facebook App settings (see [FACEBOOK_CONFIG.md](./FACEBOOK_CONFIG.md))
+
+5. Deploy!
 
 ## Project Structure
 

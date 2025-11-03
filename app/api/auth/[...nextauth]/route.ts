@@ -22,6 +22,11 @@ const authConfig: NextAuthConfig = {
     FacebookProvider({
       clientId: process.env.FACEBOOK_CLIENT_ID || '',
       clientSecret: process.env.FACEBOOK_CLIENT_SECRET || '',
+      authorization: {
+        params: {
+          scope: 'email public_profile',
+        },
+      },
     }),
     CredentialsProvider({
       name: 'Credentials',
@@ -128,23 +133,28 @@ const authConfig: NextAuthConfig = {
       return session;
     },
     async redirect({ url, baseUrl }) {
-      // Allow callback URL
+      // Get base URL from environment variable or use provided baseUrl
+      const siteUrl = process.env.NEXTAUTH_URL || baseUrl;
+      
+      // Allow callback URL with proper base URL
       if (url.startsWith('/auth/callback')) {
-        return `${baseUrl}${url}`;
+        return `${siteUrl}${url}`;
       }
       // Allow relative callback URLs
       if (url.startsWith('/')) {
-        return `${baseUrl}${url}`;
+        return `${siteUrl}${url}`;
       }
       // Allow callback URLs on the same origin
       try {
-        if (new URL(url).origin === baseUrl) {
+        const urlObj = new URL(url);
+        const siteUrlObj = new URL(siteUrl);
+        if (urlObj.origin === siteUrlObj.origin) {
           return url;
         }
       } catch {
-        // Invalid URL, use baseUrl
+        // Invalid URL, use siteUrl
       }
-      return baseUrl;
+      return siteUrl;
     },
   },
   pages: {

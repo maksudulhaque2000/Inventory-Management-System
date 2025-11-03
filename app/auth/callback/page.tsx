@@ -1,26 +1,33 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState, Suspense, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import toast from 'react-hot-toast';
 
 function AuthCallbackContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const { data: session, status } = useSession();
   const [loading, setLoading] = useState(true);
+  const hasProcessed = useRef(false);
 
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
+
+    // Prevent duplicate execution
+    if (hasProcessed.current) {
+      return;
+    }
 
     const handleOAuthCallback = async () => {
       if (status === 'loading') {
         // Set timeout to prevent infinite loading
         timeoutId = setTimeout(() => {
-          toast.error('Authentication timeout. Please try again.');
-          router.push('/login');
-          setLoading(false);
+          if (!hasProcessed.current) {
+            toast.error('Authentication timeout. Please try again.');
+            window.location.href = '/login';
+            setLoading(false);
+          }
         }, 10000); // 10 second timeout
         return;
       }
@@ -30,7 +37,13 @@ function AuthCallbackContent() {
         clearTimeout(timeoutId);
       }
 
+      // Mark as processed to prevent duplicate execution
+      if (hasProcessed.current) {
+        return;
+      }
+
       if (status === 'authenticated' && session?.user?.email) {
+        hasProcessed.current = true;
         try {
           // Fetch OAuth token
           const response = await fetch('/api/auth/oauth', {
@@ -44,19 +57,21 @@ function AuthCallbackContent() {
             
             // Get the callback URL or default to dashboard
             const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
-            router.push(callbackUrl);
+            // Use window.location.href for reliable redirect in production
+            window.location.href = callbackUrl;
           } else {
             toast.error(data.error || 'Failed to complete OAuth login');
-            router.push('/login');
+            window.location.href = '/login';
           }
         } catch (error) {
           console.error('OAuth callback error:', error);
           toast.error('Failed to complete OAuth login');
-          router.push('/login');
+          window.location.href = '/login';
         }
       } else if (status === 'unauthenticated') {
+        hasProcessed.current = true;
         toast.error('Authentication failed');
-        router.push('/login');
+        window.location.href = '/login';
       }
 
       setLoading(false);
@@ -69,7 +84,7 @@ function AuthCallbackContent() {
         clearTimeout(timeoutId);
       }
     };
-  }, [status, session, router, searchParams]);
+  }, [status, session, searchParams]);
 
   if (loading || status === 'loading') {
     return (
